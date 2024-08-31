@@ -3,6 +3,8 @@ using CodingLogger.Models;
 using CodingLogger.Shared.Logger;
 using CodingLogger.Services;
 using ConsoleTableExt;
+using System.Configuration;
+using System.Collections.Specialized;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.CognitiveServices.Speech;
@@ -17,13 +19,16 @@ class Application
     private static CodingService _codingService;
     private static bool quit;
     private static bool useSpeechRecognition;
-    const string DBNAME = "codingSession.db";
-
+    public static string DBNAME
+    {
+        get => ReadSetting("DB_NAME");
+    }
     private async static Task Main()
     {
 
         try
         {
+    
             InitializeNeccessaryClasses();
            
             await _codingService.GetAll();
@@ -43,12 +48,30 @@ class Application
 
 
     }
+    static string ReadSetting(string key)
+    {
+       
+        try
+        {
+            var appSettings = ConfigurationManager.AppSettings;
+            string? result = appSettings.Get(key);
+            if (string.IsNullOrEmpty(result)){
+                throw new NullReferenceException("The key cannot be found");
+            }
+            return result;
+            
+        }
+        catch (ConfigurationErrorsException)
+        {
+           throw new Exception("Error reading app settings");
+        }
+    }
     private static string InitializeDB()
     {
         string tableName = GetDBNameWithoutExtension(DBNAME);
-        string s_path = GetFilePath(DBNAME);
-        new DBStorage(s_path, tableName);
-        return s_path;
+        string path = ReadSetting("PATH");
+        new DBStorage(path, tableName);
+        return path;
     }
 
     private static void InitializeHelperServices(string path)

@@ -84,6 +84,10 @@ namespace CodingLogger.Data
                     var codingSession = new CodingSession(id, duration, start, end);
                     codingSessionList.Add(codingSession);
                 }
+                foreach (var session in codingSessionList)
+                {
+                    Console.WriteLine($"{session.Id}{session.Duration}{session.StartTime}{session.EndTime}");
+                }
             }
             return codingSessionList;
         }
