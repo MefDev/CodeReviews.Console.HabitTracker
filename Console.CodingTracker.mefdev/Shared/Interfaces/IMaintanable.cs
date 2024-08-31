@@ -2,10 +2,11 @@
 {
     public interface IMaintanable<T>
     {
-        void Create(T obj);
-        T Retrieve(int key);
-        void Update(T obj);
-        void Delete(int key);
+        Task Add(T obj);
+        Task<T> Get(int key);
+        Task Update(T obj);
+        Task Delete(int key);
+        Task<List<T>> GetAll();
     }
 }
 

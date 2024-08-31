@@ -4,14 +4,18 @@ namespace CodingLogger.Models
     {
         public int Id { get; set; }
         public int Duration { get; set; }
-        public DateTime Start { get; set; }
-        public DateTime End { get; set; }
-        public CodingSession(int id, int duration, DateTime startDate, DateTime endDate)
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public CodingSession(int id, int duration, DateTime startTime, DateTime endTime)
         {
             Id = id;
             Duration = duration;
-            Start = startDate;
-            End = endDate;
+            StartTime = startTime;
+            EndTime = endTime;
+        }
+        protected CodingSession()
+        {
+            
         }
     }
 }

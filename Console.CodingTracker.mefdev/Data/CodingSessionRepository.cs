@@ -1,6 +1,7 @@
 using CodingLogger.Models;
 using Microsoft.Data.Sqlite;
 using Dapper;
+using Microsoft.CognitiveServices.Speech;
 
 namespace CodingLogger.Data
 {
@@ -19,138 +20,93 @@ namespace CodingLogger.Data
             return connection;
         }
 
-        public async Task Create(CodingSession obj)
+        public async Task Create(CodingSession codingSession)
         {
-            var codingSession = obj;
             using (var connection = GetConnection())
             {
-                var sql = "INSERT INTO codingSession (Id, Duration, Start, End) VALUES (@Id, @Duration, @Start, @End)";
-
-                var rowsAffected = await connection.ExecuteAsync(sql, codingSession);
-                // or var rowsAffected = await connection.ExecuteAsync(sql, customer).ConfigureAwait(false);
-                Console.WriteLine($"{rowsAffected} row(s) inserted.");
-                var insertedSessions = connection.Query<CodingSession>("SELECT * FROM codingSession").ToList();
-                foreach (var session in insertedSessions)
+                var sql = $"INSERT INTO codingSession (" +
+                    $"{nameof(codingSession.Id)}, " +
+                    $"{nameof(codingSession.Duration)}, " +
+                    $"{nameof(codingSession.StartTime)}," +
+                    $"{nameof(codingSession.EndTime)})" +
+                    $"VALUES (@{nameof(codingSession.Id)}, " +
+                    $"@{nameof(codingSession.Duration)}, " +
+                    $"@{nameof(codingSession.StartTime)}, " +
+                    $"@{nameof(codingSession.EndTime)})";
+                var parm = new
                 {
-                    Console.WriteLine(session);
-                }
+                    Id = codingSession.Id,
+                    Duration = codingSession.Duration,
+                    StartTime = codingSession.StartTime,
+                    EndTime = codingSession.EndTime,
+                };
+                await connection.ExecuteAsync(sql, parm);
+                
             }
-
-
-             
-
         }
 
-        //public void Delete(int key)
-        //{
-        //    using (var connection = GetConnection())
-        //    {
-        //        using (var cmd = connection.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"DELETE FROM habit WHERE id = @id";
-        //            cmd.Parameters.AddWithValue("@id", key);
-        //            cmd.Prepare();
-        //            cmd.ExecuteNonQuery();
-        //        }
-        //    }
+        public async Task Delete(int key)
+        {
+            string sql = $"DELETE FROM {nameof(CodingSession)} WHERE Id=@Id";
+            using (var connection = GetConnection())
+            {
+                await connection.ExecuteAsync(sql, new { Id = key });
+            }
+          
+        }
 
+        public async Task<CodingSession> Retrieve(int key)
+        {
+            using (var connection = GetConnection())
+            {
+                var sql = $"SELECT * FROM {nameof(CodingSession)} WHERE Id = @Id";
+                var param = new
+                {
+                    Id=key
+                };
+                var codingSession = await connection.QuerySingleAsync<CodingSession>(sql,param);
+                return codingSession;
+            }
 
-        //}
+        }
+        public async Task<List<CodingSession>> RetrieveAll()
+        {
+            List<CodingSession> codingSessionList = new List<CodingSession>();
+            using (var connection = GetConnection())
+            {
+                var reader = await connection.ExecuteReaderAsync($@"SELECT * FROM {nameof(CodingSession)};");
+                while (reader.Read())
+                {
+                    int id = reader.GetInt32(0);
+                    int duration = reader.GetInt32(1);
+                    DateTime start = reader.GetDateTime(2);
+                    DateTime end = reader.GetDateTime(3);
+                    var codingSession = new CodingSession(id, duration, start, end);
+                    codingSessionList.Add(codingSession);
+                }
+            }
+            return codingSessionList;
+        }
+        public async Task Update(CodingSession codingSession)
+        {
+            var sql = $"UPDATE {nameof(codingSession)} SET" +
+                $"{nameof(codingSession.Id)} = {nameof(codingSession.Id)}, " +
+                $"{nameof(codingSession.Duration)} = {nameof(codingSession.Duration)}, " +
+                $"{nameof(codingSession.StartTime)} = {nameof(codingSession.StartTime)}, " +
+                $"{nameof(codingSession.EndTime)} = {nameof(codingSession.EndTime)}" +
+                $" WHERE {nameof(codingSession.Id)} = {nameof(codingSession.Id)}";
+            using (var connection = GetConnection())
+            {
+                var affectedRows = connection.ExecuteAsync(sql, new {
+                    Id=codingSession.Id,
+                    Duration= codingSession.Duration,
+                    StartTime=codingSession.StartTime,
+                    EndTime=codingSession.EndTime,
 
-        //public CodingSession Retrieve(int key)
-        //{
+                });
+                Console.WriteLine($"Affected Rows: {affectedRows}");
+            }
+        }
 
-        //    using (var connection = GetConnection())
-        //    {
-        //        using (var cmd = connection.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"SELECT id, name, quantity, date FROM habit WHERE id = @id";
-        //            cmd.Parameters.AddWithValue("@id", key);
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                if (reader.Read())
-        //                {
-        //                    int id = reader.GetInt32(0);
-        //                    string name = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
-        //                    string quantity = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-        //                    DateTime date = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
-
-        //                    return new CodingSession(id, name, quantity, date);
-        //                }
-        //                return null;
-
-        //            }
-
-        //        }
-        //    }
-
-        //}
-        //public List<CodingSession> RetrieveAllHabits()
-        //{
-        //    List<CodingSession> habits = new List<CodingSession>();
-        //    using (var connection = GetConnection())
-        //    {
-        //        using (var cmd = connection.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"SELECT id, name, quantity, date FROM habit";
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                while (reader.Read())
-        //                {
-        //                    int id = reader.GetInt32(0);
-        //                    string name = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
-        //                    string quantity = reader.IsDBNull(2) ? string.Empty : reader.GetString(2);
-        //                    DateTime date = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
-
-        //                    var habit = new CodingSession(id, name, quantity, date);
-        //                    habits.Add(habit);
-        //                }
-
-        //            }
-
-        //        }
-
-        //    }
-        //    return habits;
-        //}
-
-        //public void Update(CodingSession habit)
-        //{
-        //    using (var connection = GetConnection())
-        //    {
-        //        using (var cmd = connection.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"UPDATE habit SET name = @name, quantity = @quantity, date = @date WHERE id = @id";
-        //            cmd.Parameters.AddWithValue("@id", habit.Id);
-        //            cmd.Parameters.AddWithValue("@name", habit.Name);
-        //            cmd.Parameters.AddWithValue("@quantity", habit.Quantity);
-        //            cmd.Parameters.AddWithValue("@date", habit.Date);
-        //            cmd.Prepare();
-        //            cmd.ExecuteNonQuery();
-        //        }
-        //    }
-
-
-        //}
-
-        //public CodingSession RetrieveByName(string habitName)
-        //{
-        //    using (var connection = GetConnection())
-        //    {
-        //        using (var cmd = connection.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"SELECT id, name, quantity, date FROM habit WHERE name = @name";
-        //            cmd.Parameters.AddWithValue("@name", habitName);
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                int id = reader.GetInt32(0);
-        //                string name = reader.GetString(1);
-        //                string quantity = reader.GetString(2);
-        //                DateTime date = reader.GetDateTime(3);
-        //                return new CodingSession(id, name, quantity, date);
-        //            }
-        //        }
-        //    }
-        //}
     }
 }

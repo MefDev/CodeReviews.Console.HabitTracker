@@ -25,8 +25,11 @@ class Application
         try
         {
             InitializeNeccessaryClasses();
-            var session = new CodingSession(1, 22, DateTime.Today, DateTime.UtcNow);
-            await _codingService.Add(session);
+           
+            await _codingService.GetAll();
+            
+
+
         }
         catch (Exception ex)
         {

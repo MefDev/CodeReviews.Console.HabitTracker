@@ -19,7 +19,7 @@ namespace CodingLogger.Models
             {
                 _con.Open();
                 var command = _con.CreateCommand();
-                command.CommandText = $@"CREATE TABLE IF NOT EXISTS {tableName}(id INTEGER PRIMARY KEY, duration INTEGER, start dateTime, end datetime)";
+                command.CommandText = $@"CREATE TABLE IF NOT EXISTS {tableName}(id INTEGER PRIMARY KEY, duration INTEGER, StartTime dateTime, EndTime datetime)";
                 command.ExecuteNonQuery();
                 CheckTableCreation(command, tableName);
             }
