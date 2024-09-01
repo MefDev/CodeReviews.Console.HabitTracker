@@ -1,17 +1,15 @@
 using CodingLogger.Models;
 using Microsoft.Data.Sqlite;
 using Dapper;
-using Microsoft.CognitiveServices.Speech;
-
 namespace CodingLogger.Data
 {
     public class CodingSessionRepository
     {
-        private readonly string _connectionString;
+        public string _connectionString;
 
-        public CodingSessionRepository(string path)
+        public CodingSessionRepository(string connectionString)
         {
-            _connectionString = $"Data Source={path};";
+            _connectionString = connectionString;
         }
         private SqliteConnection GetConnection()
         {

@@ -2,7 +2,7 @@
 using CodingLogger.Models;
 using CodingLogger.Shared.Logger;
 using CodingLogger.Services;
-using ConsoleTableExt;
+using CodingLogger.Controller;
 using System.Configuration;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 class Application
 {
@@ -23,16 +24,21 @@ class Application
     {
         get => ReadSetting("DB_NAME");
     }
-    private async static Task Main()
+    public static string CONNECTIONSTRING
+    {
+        get => GetConnectionString();
+    }
+    private static async Task Main()
     {
 
         try
         {
     
             InitializeNeccessaryClasses();
-           
-            await _codingService.GetAll();
-            
+            Controller controller = new Controller();
+            controller.DisplayMenu();
+            Console.ReadLine();
+
 
 
         }
@@ -43,8 +49,8 @@ class Application
     }
     private static void InitializeNeccessaryClasses()
     {
-        string s_path = InitializeDB();
-        InitializeHelperServices(s_path);
+        InitializeDB();
+        InitializeHelperServices();
 
 
     }
@@ -66,38 +72,34 @@ class Application
            throw new Exception("Error reading app settings");
         }
     }
-    private static string InitializeDB()
+    static string GetConnectionString()
+    {
+        try
+        {
+            var connectionString = ConfigurationManager.ConnectionStrings["DB"].ConnectionString;
+            connectionString = connectionString.
+                Replace("{PATH}", GetFilePath(DBNAME));
+            return connectionString;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+    }
+        
+    private static void InitializeDB()
     {
         string tableName = GetDBNameWithoutExtension(DBNAME);
-        string path = ReadSetting("PATH");
-        new DBStorage(path, tableName);
-        return path;
+        new DBStorage(CONNECTIONSTRING, tableName);
     }
 
-    private static void InitializeHelperServices(string path)
+    private static void InitializeHelperServices()
     {
-        _codingService = new CodingService(path);
+        _codingService = new CodingService(CONNECTIONSTRING);
         _successMessage = new Message();
         _errorLogger = new ErrorsLogger();
     }
-    private static void DisplayMenu()
-    {
-        Console.WriteLine("-------------------------- Coding logger Menu ---------------------------");
-        Console.WriteLine("Choose an option from the following list:");
-        Console.WriteLine("-------------------------- Available options ---------------------------");
-        Console.WriteLine("\ta - Add a coding session");
-        Console.WriteLine("\tv - View a coding session");
-        Console.WriteLine("\td - Delete a coding session");
-        Console.WriteLine("\tu - Update a coding session");
-        Console.WriteLine("\ts - View all coding sessions");
-        Console.WriteLine("\tq - exit");
-        Console.Write("Your option? ");  
-    }
     
-
-
-
-
     private static string GetDBNameWithoutExtension(string dbName)
     {
         return dbName.Replace(".db", "");
@@ -253,34 +255,7 @@ class Application
 //            Console.Write("Your option? ");
 //        }
 //    }
-//    private static string DisplayAddHabitOptions(string name)
-//    {
-//        string? option = null;
-//        switch (name)
-//        {
-//            case "id":
-//                Console.Write($"Enter habit {name}: ");
-//                break;
-//            case "name":
-//                Console.Write($"Enter habit {name}: ");
-//                break;
-//            case "quanity":
-//                Console.Write($"Enter habit {name}: ");
-//                break;
-//            case "date":
-//                Console.Write($"Enter start date (yyyy-MM-dd) {name}: ");
-//                break;
-//            default:
-//                break;
-//        }
 
-//        while (string.IsNullOrEmpty(option))
-//        {
-//            option = Console.ReadLine();
-//        }
-//        return option;
-
-//    }
 //    private static void DisplayHabitRetrieved(Habit Retrieved)
 //    {
 //        Console.WriteLine("--------------------------- Habit retreived ----------------------------");
@@ -498,13 +473,5 @@ class Application
 //        }
 //    }
 
-//    private static string GetCurrentPath()
-//    {
-//        return Environment.CurrentDirectory.Replace("bin/Debug/net7.0", "");
-//    }
 
-//    private static string GetFilePath(string tableName)
-//    {
-//        return Path.Combine(GetCurrentPath(), tableName);
-//    }
 //}

@@ -3,22 +3,29 @@ namespace CodingLogger.Models
 {
     public class DBStorage
     {
-        public SqliteConnection _con;
-        public DBStorage(string path, string tableName)
+        private readonly string _connectionString;
+        public DBStorage(string connectionString, string tableName)
         {
-            CreateTable(path, tableName);
+            _connectionString = connectionString;
+            CreateTable(tableName);
             
         }
         public DBStorage()
         {
 
         }
-        private void CreateTable(string path, string tableName)
+        private SqliteConnection GetConnection()
         {
-            using (_con = new SqliteConnection($"Data Source={path}"))
+            var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            return connection;
+        }
+        private void CreateTable(string tableName)
+        {
+            using (var connection = GetConnection())
             {
-                _con.Open();
-                var command = _con.CreateCommand();
+                connection.Open();
+                var command = connection.CreateCommand();
                 command.CommandText = $@"CREATE TABLE IF NOT EXISTS {tableName}(id INTEGER PRIMARY KEY, duration INTEGER, StartTime dateTime, EndTime datetime)";
                 command.ExecuteNonQuery();
                 CheckTableCreation(command, tableName);
