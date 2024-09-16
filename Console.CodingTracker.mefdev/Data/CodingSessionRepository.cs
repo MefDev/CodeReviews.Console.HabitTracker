@@ -1,6 +1,9 @@
+using System.Transactions;
 using CodingLogger.Models;
-using Microsoft.Data.Sqlite;
 using Dapper;
+using Microsoft.Data.Sqlite;
+using Spectre.Console;
+
 namespace CodingLogger.Data
 {
     public class CodingSessionRepository
@@ -20,94 +23,132 @@ namespace CodingLogger.Data
 
         public async Task Create(CodingSession codingSession)
         {
-            using (var connection = GetConnection())
+            try
             {
-                var sql = $"INSERT INTO codingSession (" +
-                    $"{nameof(codingSession.Id)}, " +
-                    $"{nameof(codingSession.Duration)}, " +
-                    $"{nameof(codingSession.StartTime)}," +
-                    $"{nameof(codingSession.EndTime)})" +
-                    $"VALUES (@{nameof(codingSession.Id)}, " +
-                    $"@{nameof(codingSession.Duration)}, " +
-                    $"@{nameof(codingSession.StartTime)}, " +
-                    $"@{nameof(codingSession.EndTime)})";
-                var parm = new
+                using (var connection = GetConnection())
                 {
-                    Id = codingSession.Id,
-                    Duration = codingSession.Duration,
-                    StartTime = codingSession.StartTime,
-                    EndTime = codingSession.EndTime,
-                };
-                await connection.ExecuteAsync(sql, parm);
-                
+                    var sql = $"INSERT INTO codingSession (" +
+                        $"{nameof(codingSession.Id)}, " +
+                        $"{nameof(codingSession.Duration)}, " +
+                        $"{nameof(codingSession.StartTime)}," +
+                        $"{nameof(codingSession.EndTime)})" +
+                        $"VALUES (@{nameof(codingSession.Id)}, " +
+                        $"@{nameof(codingSession.Duration)}, " +
+                        $"@{nameof(codingSession.StartTime)}, " +
+                        $"@{nameof(codingSession.EndTime)})";
+                    var parm = new
+                    {
+                        Id = codingSession.Id,
+                        Duration = codingSession.Duration,
+                        StartTime = codingSession.StartTime,
+                        EndTime = codingSession.EndTime,
+                    };
+                    await connection.ExecuteAsync(sql, parm);
+
+                }
             }
+            catch
+            {
+                throw new Exception("Invalid operation: An error has occured while creating a coding session");
+            }
+
         }
 
         public async Task Delete(int key)
         {
-            string sql = $"DELETE FROM {nameof(CodingSession)} WHERE Id=@Id";
-            using (var connection = GetConnection())
+            try
             {
-                await connection.ExecuteAsync(sql, new { Id = key });
+                string sql = $"DELETE FROM {nameof(CodingSession)} WHERE Id=@Id";
+                using (var connection = GetConnection())
+                {
+                    await connection.ExecuteAsync(sql, new { Id = key });
+                }
             }
-          
+            catch
+            {
+                throw new Exception("Invalid operation: An error has occured while deleting a coding session");
+
+            }
         }
 
-        public async Task<CodingSession> Retrieve(int key)
+        public async Task<CodingSession?> Retrieve(int key)
         {
-            using (var connection = GetConnection())
+            try
             {
-                var sql = $"SELECT * FROM {nameof(CodingSession)} WHERE Id = @Id";
-                var param = new
+                using (var connection = GetConnection())
                 {
-                    Id=key
-                };
-                var codingSession = await connection.QuerySingleAsync<CodingSession>(sql,param);
-                return codingSession;
+                    var sql = $"SELECT * FROM {nameof(CodingSession)} WHERE Id = @Id";
+                    var param = new { Id = key };
+                    var codingSession = await connection.QueryFirstOrDefaultAsync<CodingSession>(sql, param);
+                    if (codingSession == null)
+                    {
+                        AnsiConsole.MarkupLine("[yellow]Notice: The coding session cannot be found[/]");
+                    }
+                    return codingSession;
+                }
             }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
+                throw new Exception("Invalid Operation: An error has occured while retreiving a coding session");
+            }
+
 
         }
         public async Task<List<CodingSession>> RetrieveAll()
         {
-            List<CodingSession> codingSessionList = new List<CodingSession>();
-            using (var connection = GetConnection())
+            try
             {
-                var reader = await connection.ExecuteReaderAsync($@"SELECT * FROM {nameof(CodingSession)};");
-                while (reader.Read())
+                List<CodingSession> codingSessionList = new List<CodingSession>();
+                using (var connection = GetConnection())
                 {
-                    int id = reader.GetInt32(0);
-                    int duration = reader.GetInt32(1);
-                    DateTime start = reader.GetDateTime(2);
-                    DateTime end = reader.GetDateTime(3);
-                    var codingSession = new CodingSession(id, duration, start, end);
-                    codingSessionList.Add(codingSession);
+                    var reader = await connection.ExecuteReaderAsync($@"SELECT * FROM {nameof(CodingSession)};");
+                    while (reader.Read())
+                    {
+                        int id = reader.GetInt32(0);
+                        long duration = reader.GetInt64(1);
+                        DateTime start = reader.GetDateTime(2);
+                        DateTime end = reader.GetDateTime(3);
+                        var codingSession = new CodingSession(id, duration, start, end);
+                        codingSessionList.Add(codingSession);
+                    }
                 }
-                foreach (var session in codingSessionList)
-                {
-                    Console.WriteLine($"{session.Id}{session.Duration}{session.StartTime}{session.EndTime}");
-                }
+                return codingSessionList;
             }
-            return codingSessionList;
+            catch
+            {
+                throw new Exception("Invalid Operation: An error has occured while retreiving all coding sessions");
+
+            }
+
         }
         public async Task Update(CodingSession codingSession)
         {
-            var sql = $"UPDATE {nameof(codingSession)} SET" +
-                $"{nameof(codingSession.Id)} = {nameof(codingSession.Id)}, " +
-                $"{nameof(codingSession.Duration)} = {nameof(codingSession.Duration)}, " +
-                $"{nameof(codingSession.StartTime)} = {nameof(codingSession.StartTime)}, " +
-                $"{nameof(codingSession.EndTime)} = {nameof(codingSession.EndTime)}" +
-                $" WHERE {nameof(codingSession.Id)} = {nameof(codingSession.Id)}";
-            using (var connection = GetConnection())
+            try
             {
-                var affectedRows = connection.ExecuteAsync(sql, new {
-                    Id=codingSession.Id,
-                    Duration= codingSession.Duration,
-                    StartTime=codingSession.StartTime,
-                    EndTime=codingSession.EndTime,
+                var sql = $"UPDATE {nameof(codingSession)} SET " +
+                  $"{nameof(codingSession.Duration)} = @Duration, " +
+                  $"{nameof(codingSession.StartTime)} = @StartTime, " +
+                  $"{nameof(codingSession.EndTime)} = @EndTime " +
+                  $"WHERE {nameof(codingSession.Id)} = @Id";
+                using (var connection = GetConnection())
+                {
+                    var parms = new
+                    {
+                        Id = codingSession.Id,
+                        Duration = codingSession.Duration,
+                        StartTime = codingSession.StartTime,
+                        EndTime = codingSession.EndTime,
+                    };
+                    await connection.ExecuteAsync(sql, parms);
+                }
 
-                });
-                Console.WriteLine($"Affected Rows: {affectedRows}");
             }
+            catch
+            {
+                throw new Exception("Invalid Operation: An error has occured while updating a coding session");
+            }
+
         }
 
     }

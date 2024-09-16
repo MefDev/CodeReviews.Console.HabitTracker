@@ -8,9 +8,9 @@ namespace CodingLogger.Models
         {
             _connectionString = connectionString;
             CreateTable(tableName);
-            
+
         }
-        public DBStorage()
+        protected DBStorage()
         {
 
         }
@@ -31,18 +31,18 @@ namespace CodingLogger.Models
                 CheckTableCreation(command, tableName);
             }
         }
-        private void CheckTableCreation(SqliteCommand command, string tableName)
+        private static void CheckTableCreation(SqliteCommand command, string tableName)
         {
             command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name=@tableName";
             command.Parameters.AddWithValue("@tableName", tableName);
             var tableExists = command.ExecuteScalar();
-            if (tableExists == null)
+            if (tableExists != null)
             {
-                Console.WriteLine("Table creation failed.");
+                Console.WriteLine("The table is created successfully.\n");
             }
             else
             {
-                Console.WriteLine("Table created successfully.");
+                Console.WriteLine("The table is not created successfully.");
             }
         }
 
